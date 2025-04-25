@@ -2,7 +2,7 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from datetime import datetime, date
-from app.models import ProcessedTickets
+from app.models.processed_tickets import ProcessedTickets
 
 logger = logging.getLogger(__name__)
 

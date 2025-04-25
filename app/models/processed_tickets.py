@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
 
 class ProcessedTickets(Base):
     __tablename__ = "processed_tickets"
@@ -12,3 +11,6 @@ class ProcessedTickets(Base):
     sentiment_rating = Column(String, nullable=False)
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=True)
+    file_id = Column(Integer, ForeignKey("tickets_files.id"))
+
+    file = relationship("TicketsFiles", back_populates="tickets")
