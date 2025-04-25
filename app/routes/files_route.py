@@ -8,7 +8,7 @@ from app.services.files_service import (
     get_processed_files_service
 )
 
-router = APIRouter(prefix="/files", tags=["file-upload"])
+router = APIRouter(prefix="/files", tags=["files"])
 
 @router.post("/upload")
 def upload_file(file: FileCreateSchema, db: Session = Depends(get_db)):
