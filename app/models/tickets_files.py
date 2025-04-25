@@ -6,7 +6,7 @@ class TicketsFiles(Base):
     __tablename__ = "tickets_files"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
+    name = Column(String, nullable=False)
     upload_datetime = Column(DateTime, nullable=False)
     processing_status = Column(Boolean, nullable=False, default=False)
     finished_at = Column(DateTime, nullable=True)
