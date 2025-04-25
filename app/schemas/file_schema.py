@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
 
@@ -11,7 +11,5 @@ class FileSchema(BaseModel):
     upload_datetime: datetime
     processing_status: bool
     finished_at: Optional[datetime]
-    error: bool
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
