@@ -6,6 +6,7 @@ class ProcessedTickets(Base):
     __tablename__ = "processed_tickets"
 
     id = Column(Integer, primary_key=True, index=True)
+    original_id = Column(String, nullable=False)
     title = Column(String, nullable=False)
     service_rating = Column(String, nullable=False)
     sentiment_rating = Column(String, nullable=False)
