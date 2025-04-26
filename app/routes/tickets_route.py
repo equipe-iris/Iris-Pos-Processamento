@@ -22,7 +22,7 @@ def get_processed_tickets(db: Session = Depends(get_db)):
 
 
 @router.post("/classification-results")
-def classification_results(results: ClassificationResults, db: Session = Depends(get_db)):
+def classification_results(results: List[ClassificationResults], db: Session = Depends(get_db)):
     try:
         classification_results_service(results, db)
         return { "message": "Classification results saved successfully" }
