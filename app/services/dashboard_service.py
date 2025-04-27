@@ -89,8 +89,11 @@ def get_daily_satisfaction_service(start_date: date, end_date: date, db: Session
         logger.error(f"Error in get_daily_satisfaction_service: {e}")
         raise
 
-def get_average_service_time_service(db: Session):
+def get_average_service_time_service(start_date: date, end_date: date, db: Session):
     try:
+        filter_start = datetime.combine(start_date, datetime.min.time())
+        filter_end = datetime.combine(end_date, datetime.max.time())
+
         results = db.query(
             func.date(ProcessedTickets.start_date).label("date"),
             func.avg(
@@ -98,7 +101,11 @@ def get_average_service_time_service(db: Session):
                     'epoch', func.coalesce(ProcessedTickets.end_date, func.now()) - ProcessedTickets.start_date
                 ) / 60
             ).label("avg_time")
+        ).filter(
+            ProcessedTickets.start_date >= filter_start,
+            ProcessedTickets.start_date <= filter_end
         ).group_by(func.date(ProcessedTickets.start_date)).order_by(func.date(ProcessedTickets.start_date)).all()
+
         avg_times = [
             {"date": r.date.isoformat(), "average_time": round(r.avg_time, 2) if r.avg_time is not None else None}
             for r in results
