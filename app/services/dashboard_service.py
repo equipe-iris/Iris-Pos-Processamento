@@ -37,12 +37,11 @@ def get_categories_service(db: Session):
 
 def get_satisfaction_score_service(start_date: date, end_date: date, db: Session):
     try:
-        current_datetime = datetime.now()
         filter_start = datetime.combine(start_date, datetime.min.time())
         filter_end = datetime.combine(end_date, datetime.max.time())
         tickets = db.query(ProcessedTickets).filter(
             ProcessedTickets.start_date >= filter_start,
-            func.coalesce(ProcessedTickets.end_date, current_datetime) <= filter_end
+            ProcessedTickets.start_date <= filter_end
         ).all()
         total = len(tickets)
         if total == 0:
@@ -59,15 +58,14 @@ def get_satisfaction_score_service(start_date: date, end_date: date, db: Session
 
 def get_daily_satisfaction_service(start_date: date, end_date: date, db: Session):
     try:
-        current_datetime = datetime.now()
         filter_start = datetime.combine(start_date, datetime.min.time())
         filter_end = datetime.combine(end_date, datetime.max.time())
         subquery = db.query(
-            func.date(func.coalesce(ProcessedTickets.end_date, func.current_date())).label("date"),
+            func.date(ProcessedTickets.start_date).label("date"),
             ProcessedTickets.sentiment_rating
         ).filter(
             ProcessedTickets.start_date >= filter_start,
-            func.coalesce(ProcessedTickets.end_date, current_datetime) <= filter_end
+            ProcessedTickets.start_date <= filter_end
         ).subquery()
         results = db.query(
             subquery.c.date,
