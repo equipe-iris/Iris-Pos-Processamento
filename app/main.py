@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.models import Base
 from app.database import engine
-from app.routes import dashboard_route
+from app.routes import dashboard_route, files_route, tickets_route
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,6 +30,8 @@ def startup_event():
     logger.info(f"Swagger available at http://localhost:{port}/docs")
 
 app.include_router(dashboard_route.router)
+app.include_router(files_route.router)
+app.include_router(tickets_route.router)
 
 @app.get("/health")
 def health_check():
