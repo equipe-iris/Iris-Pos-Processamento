@@ -54,9 +54,13 @@ def get_daily_satisfaction(
         raise HTTPException(status_code=500, detail="Error retrieving daily satisfaction data")
 
 @router.get("/average-service-time")
-def get_average_service_time(db: Session = Depends(get_db)):
+def get_average_service_time(
+    start_date: date = Query(..., description="Start date in format YYYY-MM-DD"),
+    end_date: date = Query(..., description="End date in format YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
     try:
-        result = get_average_service_time_service(db)
+        result = get_average_service_time_service(start_date, end_date, db)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving average service time data")
