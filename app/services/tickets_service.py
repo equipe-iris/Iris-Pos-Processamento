@@ -7,6 +7,12 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import List
 
+def safe_parse_date(date_str: str) -> datetime:
+    try:
+        return datetime.fromisoformat(date_str)
+    except ValueError:
+        return None
+
 def classification_results_service(results_list: List[ClassificationResults], db: Session):
     try:
         tickets_data = []
@@ -17,8 +23,8 @@ def classification_results_service(results_list: List[ClassificationResults], db
                     "title": ticket.title,
                     "service_rating": ticket.service_rating,
                     "sentiment_rating": ticket.sentiment_rating,
-                    "start_date": ticket.start_date,
-                    "end_date": ticket.end_date,
+                    "start_date": safe_parse_date(ticket.start_date),
+                    "end_date": safe_parse_date(ticket.end_date),
                     "file_id": results.file_id
                 }
                 for ticket in results.processed_tickets
