@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "")
+allowed_origins = os.getenv("PPROCEDURE_ALLOWED_ORIGINS", "")
 origins = [origin.strip() for origin in allowed_origins.split(",") if origin.strip()]
 
 app.add_middleware(
@@ -26,7 +26,7 @@ app.add_middleware(
 def startup_event():
     Base.metadata.create_all(bind=engine)
     logger.info("Tables created successfully")
-    port = os.getenv("PORT")
+    port = os.getenv("PPROCEDURE_PORT")
     logger.info(f"Swagger available at http://localhost:{port}/docs")
 
 app.include_router(dashboard_route.router)

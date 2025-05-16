@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = int(os.getenv("DB_PORT"))
-DB_USERNAME = os.getenv("DB_USERNAME")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_DATABASE = os.getenv("DB_DATABASE")
+PPROCEDURE_DB_HOST = os.getenv("PPROCEDURE_DB_HOST")
+PPROCEDURE_DB_PORT = int(os.getenv("PPROCEDURE_DB_PORT"))
+PPROCEDURE_DB_USERNAME = os.getenv("PPROCEDURE_DB_USERNAME")
+PPROCEDURE_DB_PASSWORD = os.getenv("PPROCEDURE_DB_PASSWORD")
+PPROCEDURE_DB_DATABASE = os.getenv("PPROCEDURE_DB_DATABASE")

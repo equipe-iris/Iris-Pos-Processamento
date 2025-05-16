@@ -7,8 +7,8 @@ class CreateTicketSchema(BaseModel):
     title: str
     service_rating: str
     sentiment_rating: str
-    start_date: datetime
-    end_date: Optional[datetime]
+    start_date: str
+    end_date: Optional[str]
 
     model_config = ConfigDict(from_attributes=True)
 
