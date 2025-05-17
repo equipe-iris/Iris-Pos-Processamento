@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from datetime import datetime, date
 from app.models.processed_tickets import ProcessedTickets
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +36,21 @@ def get_categories_service(db: Session):
         logger.error(f"Error in get_categories_service: {e}")
         raise
 
-def get_satisfaction_score_service(start_date: date, end_date: date, db: Session):
+def get_satisfaction_score_service(start_date: Optional[date], end_date: Optional[date], db: Session):
     try:
-        filter_start = datetime.combine(start_date, datetime.min.time())
-        filter_end = datetime.combine(end_date, datetime.max.time())
-        tickets = db.query(ProcessedTickets).filter(
-            ProcessedTickets.start_date >= filter_start,
-            ProcessedTickets.start_date <= filter_end
-        ).all()
+        query = db.query(ProcessedTickets)
+        if start_date:
+            filter_start = datetime.combine(start_date, datetime.min.time())
+            query = query.filter(ProcessedTickets.start_date >= filter_start)
+        if end_date:
+            filter_end = datetime.combine(end_date, datetime.max.time())
+            query = query.filter(ProcessedTickets.start_date <= filter_end)
+        tickets = query.all()
+
         total = len(tickets)
         if total == 0:
             return {"score": 0, "ticket_count": 0}
+        
         positive = sum(1 for t in tickets if t.sentiment_rating.lower() == "positivo")
         neutral = sum(1 for t in tickets if t.sentiment_rating.lower() == "neutro")
         negative = sum(1 for t in tickets if t.sentiment_rating.lower() == "negativo")
@@ -56,17 +61,20 @@ def get_satisfaction_score_service(start_date: date, end_date: date, db: Session
         logger.error(f"Error in get_satisfaction_score_service: {e}")
         raise
 
-def get_daily_satisfaction_service(start_date: date, end_date: date, db: Session):
+def get_daily_satisfaction_service(start_date: Optional[date], end_date: Optional[date], db: Session):
     try:
-        filter_start = datetime.combine(start_date, datetime.min.time())
-        filter_end = datetime.combine(end_date, datetime.max.time())
-        subquery = db.query(
+        query = db.query(
             func.date(ProcessedTickets.start_date).label("date"),
             ProcessedTickets.sentiment_rating
-        ).filter(
-            ProcessedTickets.start_date >= filter_start,
-            ProcessedTickets.start_date <= filter_end
-        ).subquery()
+        )
+        if start_date:
+            filter_start = datetime.combine(start_date, datetime.min.time())
+            query = query.filter(ProcessedTickets.start_date >= filter_start)
+        if end_date:
+            filter_end = datetime.combine(end_date, datetime.max.time())
+            query = query.filter(ProcessedTickets.start_date <= filter_end)
+        subquery = query.subquery()
+
         results = db.query(
             subquery.c.date,
             func.count().label("total"),
@@ -91,20 +99,21 @@ def get_daily_satisfaction_service(start_date: date, end_date: date, db: Session
 
 def get_average_service_time_service(start_date: date, end_date: date, db: Session):
     try:
-        filter_start = datetime.combine(start_date, datetime.min.time())
-        filter_end = datetime.combine(end_date, datetime.max.time())
-
-        results = db.query(
+        query = db.query(
             func.date(ProcessedTickets.start_date).label("date"),
             func.avg(
                 func.extract(
                     'epoch', func.coalesce(ProcessedTickets.end_date, func.now()) - ProcessedTickets.start_date
                 ) / 60
             ).label("avg_time")
-        ).filter(
-            ProcessedTickets.start_date >= filter_start,
-            ProcessedTickets.start_date <= filter_end
-        ).group_by(func.date(ProcessedTickets.start_date)).order_by(func.date(ProcessedTickets.start_date)).all()
+        )
+        if start_date:
+            filter_start = datetime.combine(start_date, datetime.min.time())
+            query = query.filter(ProcessedTickets.start_date >= filter_start)
+        if end_date:
+            filter_end = datetime.combine(end_date, datetime.max.time())
+            query = query.filter(ProcessedTickets.start_date <= filter_end)
+        results = query.group_by(func.date(ProcessedTickets.start_date)).order_by(func.date(ProcessedTickets.start_date)).all()
 
         avg_times = [
             {"date": r.date.isoformat(), "average_time": round(r.avg_time, 2) if r.avg_time is not None else None}
