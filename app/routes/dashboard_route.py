@@ -10,6 +10,8 @@ from app.services.dashboard_service import (
     get_average_service_time_service,
     get_open_tickets_service
 )
+from typing import Optional
+from app.utils.parse_date import parse_date
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -31,36 +33,42 @@ def get_categories(db: Session = Depends(get_db)):
 
 @router.get("/satisfaction-score")
 def get_satisfaction_score(
-    start_date: date = Query(..., description="Start date in format YYYY-MM-DD"),
-    end_date: date = Query(..., description="End date in format YYYY-MM-DD"),
+    start_date: Optional[str] = Query(None, description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="End date in format YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     try:
-        result = get_satisfaction_score_service(start_date, end_date, db)
+        start = parse_date(start_date)
+        end = parse_date(end_date)
+        result = get_satisfaction_score_service(start, end, db)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving satisfaction score data")
 
 @router.get("/daily-satisfaction")
 def get_daily_satisfaction(
-    start_date: date = Query(..., description="Start date in format YYYY-MM-DD"),
-    end_date: date = Query(..., description="End date in format YYYY-MM-DD"),
+    start_date: Optional[str] = Query(..., description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(..., description="End date in format YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     try:
-        result = get_daily_satisfaction_service(start_date, end_date, db)
+        start = parse_date(start_date)
+        end = parse_date(end_date)
+        result = get_daily_satisfaction_service(start, end, db)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving daily satisfaction data")
 
 @router.get("/average-service-time")
 def get_average_service_time(
-    start_date: date = Query(..., description="Start date in format YYYY-MM-DD"),
-    end_date: date = Query(..., description="End date in format YYYY-MM-DD"),
+    start_date: Optional[str] = Query(..., description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(..., description="End date in format YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     try:
-        result = get_average_service_time_service(start_date, end_date, db)
+        start = parse_date(start_date)
+        end = parse_date(end_date)
+        result = get_average_service_time_service(start, end, db)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving average service time data")
