@@ -4,6 +4,7 @@ from sqlalchemy import func, case
 from datetime import datetime, date
 from app.models.processed_tickets import ProcessedTickets
 from typing import Optional
+from dateutil.relativedelta import relativedelta
 
 logger = logging.getLogger(__name__)
 
@@ -97,27 +98,46 @@ def get_daily_satisfaction_service(start_date: Optional[date], end_date: Optiona
         logger.error(f"Error in get_daily_satisfaction_service: {e}")
         raise
 
-def get_average_service_time_service(start_date: date, end_date: date, db: Session):
+def get_average_service_time_service(months: int, db: Session):
     try:
         query = db.query(
-            func.date(ProcessedTickets.start_date).label("date"),
+            func.date_trunc('month', ProcessedTickets.start_date).label("date"),
             func.avg(
                 func.extract(
-                    'epoch', func.coalesce(ProcessedTickets.end_date, func.now()) - ProcessedTickets.start_date
+                    'epoch', ProcessedTickets.end_date - ProcessedTickets.start_date
                 ) / 60
             ).label("avg_time")
-        )
-        if start_date:
-            filter_start = datetime.combine(start_date, datetime.min.time())
-            query = query.filter(ProcessedTickets.start_date >= filter_start)
-        if end_date:
-            filter_end = datetime.combine(end_date, datetime.max.time())
-            query = query.filter(ProcessedTickets.start_date <= filter_end)
-        results = query.group_by(func.date(ProcessedTickets.start_date)).order_by(func.date(ProcessedTickets.start_date)).all()
+        ).filter(ProcessedTickets.end_date.isnot(None))
+
+        today = datetime.today()
+        if months and months > 0:
+            start_month = (today.replace(day=1) - relativedelta(months=months-1))
+            query = query.filter(ProcessedTickets.start_date >= start_month)
+        else:
+            first_ticket = db.query(func.min(ProcessedTickets.start_date)).scalar()
+            if first_ticket:
+                start_month = first_ticket.replace(day=1)
+                months = (today.year - start_month.year) * 12 + (today.month - start_month.month) + 1
+            else:
+                start_month = today.replace(day=1)
+                months = 1
+
+        results = query.group_by(func.date_trunc('month', ProcessedTickets.start_date))\
+                       .order_by(func.date_trunc('month', ProcessedTickets.start_date)).all()
+
+        result_dict = {r.date.date(): r.avg_time for r in results}
+
+        months_list = [
+            (today.replace(day=1) - relativedelta(months=i)).date()
+            for i in reversed(range(months))
+        ]
 
         avg_times = [
-            {"date": r.date.isoformat(), "average_time": round(r.avg_time, 2) if r.avg_time is not None else None}
-            for r in results
+            {
+                "date": m.isoformat(),
+                "average_time": round(result_dict[m], 2) if m in result_dict and result_dict[m] is not None else 0
+            }
+            for m in months_list
         ]
         return avg_times
     except Exception as e:
