@@ -23,12 +23,19 @@ def get_cards_service(db: Session):
         logger.error(f"Error in get_cards_service: {e}")
         raise
 
-def get_categories_service(db: Session):
+def get_categories_service(start_date: Optional[date], end_date: Optional[date], db: Session):
     try:
-        results = db.query(
+        query = db.query(
             ProcessedTickets.service_rating.label("category"),
             func.count(ProcessedTickets.id).label("quantity")
-        ).group_by(ProcessedTickets.service_rating).all()
+        )
+        if start_date:
+            filter_start = datetime.combine(start_date, datetime.min.time())
+            query = query.filter(ProcessedTickets.start_date >= filter_start)
+        if end_date:
+            filter_end = datetime.combine(end_date, datetime.max.time())
+            query = query.filter(ProcessedTickets.start_date <= filter_end)
+        results = query.group_by(ProcessedTickets.service_rating).all()
         categories = [
             {"category": r.category.lower(), "quantity": r.quantity} for r in results
         ]

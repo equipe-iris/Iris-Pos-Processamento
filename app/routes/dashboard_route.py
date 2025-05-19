@@ -24,9 +24,15 @@ def get_cards(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error retrieving cards data")
 
 @router.get("/categories")
-def get_categories(db: Session = Depends(get_db)):
+def get_categories(
+    start_date: Optional[str] = Query(None, description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="End date in format YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
     try:
-        result = get_categories_service(db)
+        start = parse_date(start_date)
+        end = parse_date(end_date)
+        result = get_categories_service(start, end, db)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving categories data")
