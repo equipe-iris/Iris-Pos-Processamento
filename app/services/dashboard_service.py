@@ -44,36 +44,11 @@ def get_categories_service(start_date: Optional[date], end_date: Optional[date],
         logger.error(f"Error in get_categories_service: {e}")
         raise
 
-def get_satisfaction_score_service(start_date: Optional[date], end_date: Optional[date], db: Session):
-    try:
-        query = db.query(ProcessedTickets)
-        if start_date:
-            filter_start = datetime.combine(start_date, datetime.min.time())
-            query = query.filter(ProcessedTickets.start_date >= filter_start)
-        if end_date:
-            filter_end = datetime.combine(end_date, datetime.max.time())
-            query = query.filter(ProcessedTickets.start_date <= filter_end)
-        tickets = query.all()
-
-        total = len(tickets)
-        if total == 0:
-            return {"score": 0, "ticket_count": 0}
-        
-        positive = sum(1 for t in tickets if t.sentiment_rating.lower() == "positivo")
-        neutral = sum(1 for t in tickets if t.sentiment_rating.lower() == "neutro")
-        negative = sum(1 for t in tickets if t.sentiment_rating.lower() == "negativo")
-        weighted_sum = positive * 50 + neutral * 30 + negative * 20
-        score = (weighted_sum / (total * 50)) * 100
-        return {"score": round(score, 2), "ticket_count": total}
-    except Exception as e:
-        logger.error(f"Error in get_satisfaction_score_service: {e}")
-        raise
-
-def get_daily_satisfaction_service(start_date: Optional[date], end_date: Optional[date], db: Session):
+def get_emotions_service(start_date: Optional[date], end_date: Optional[date], db: Session):
     try:
         query = db.query(
-            func.date(ProcessedTickets.start_date).label("date"),
-            ProcessedTickets.sentiment_rating
+            ProcessedTickets.sentiment_rating.label("emotion"),
+            func.count(ProcessedTickets.id).label("quantity")
         )
         if start_date:
             filter_start = datetime.combine(start_date, datetime.min.time())
@@ -81,28 +56,45 @@ def get_daily_satisfaction_service(start_date: Optional[date], end_date: Optiona
         if end_date:
             filter_end = datetime.combine(end_date, datetime.max.time())
             query = query.filter(ProcessedTickets.start_date <= filter_end)
-        subquery = query.subquery()
-
-        results = db.query(
-            subquery.c.date,
-            func.count().label("total"),
-            func.sum(case((subquery.c.sentiment_rating.ilike("positivo"), 1), else_=0)).label("positive"),
-            func.sum(case((subquery.c.sentiment_rating.ilike("neutro"), 1), else_=0)).label("neutral"),
-            func.sum(case((subquery.c.sentiment_rating.ilike("negativo"), 1), else_=0)).label("negative"),
-        ).group_by(subquery.c.date).order_by(subquery.c.date).all()
-        daily = []
-        for r in results:
-            total = r.total
-            weighted_sum = r.positive * 50 + r.neutral * 30 + r.negative * 20
-            score = (weighted_sum / (total * 50)) * 100 if total > 0 else 0
-            daily.append({
-                "date": r.date.isoformat(),
-                "score": round(score, 2),
-                "ticket_count": total
-            })
-        return daily
+        results = query.group_by(ProcessedTickets.sentiment_rating).all()
+        emotions = [
+            {"emotion": r.emotion.lower(), "quantity": r.quantity} for r in results
+        ]
+        return emotions
     except Exception as e:
-        logger.error(f"Error in get_daily_satisfaction_service: {e}")
+        logger.error(f"Error in get_emotions_service: {e}")
+        raise
+
+def get_daily_emotion_service(start_date: Optional[date], end_date: Optional[date], db: Session):
+    try:
+        query = db.query(
+            func.date(ProcessedTickets.start_date).label("date"),
+            ProcessedTickets.sentiment_rating,
+            func.count().label("quantity")
+        )
+        if start_date:
+            filter_start = datetime.combine(start_date, datetime.min.time())
+            query = query.filter(ProcessedTickets.start_date >= filter_start)
+        if end_date:
+            filter_end = datetime.combine(end_date, datetime.max.time())
+            query = query.filter(ProcessedTickets.start_date <= filter_end)
+        results = query.group_by(
+            func.date(ProcessedTickets.start_date),
+            ProcessedTickets.sentiment_rating
+        ).order_by(func.date(ProcessedTickets.start_date)).all()
+
+        daily = {}
+        for r in results:
+            date_str = r.date.isoformat()
+            if date_str not in daily:
+                daily[date_str] = {"date": date_str, "positivo": 0, "neutro": 0, "negativo": 0}
+            emotion = r.sentiment_rating.lower()
+            if emotion in daily[date_str]:
+                daily[date_str][emotion] = r.quantity
+
+        return list(daily.values())
+    except Exception as e:
+        logger.error(f"Error in get_daily_emotion_service: {e}")
         raise
 
 def get_average_service_time_service(months: int, db: Session):

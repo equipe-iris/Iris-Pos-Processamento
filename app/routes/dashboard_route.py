@@ -5,8 +5,8 @@ from app.database import get_db
 from app.services.dashboard_service import (
     get_cards_service,
     get_categories_service,
-    get_satisfaction_score_service,
-    get_daily_satisfaction_service,
+    get_emotions_service,
+    get_daily_emotion_service,
     get_average_service_time_service,
     get_open_tickets_service
 )
@@ -37,8 +37,8 @@ def get_categories(
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving categories data")
 
-@router.get("/satisfaction-score")
-def get_satisfaction_score(
+@router.get("/emotions")
+def get_emotions(
     start_date: Optional[str] = Query(None, description="Start date in format YYYY-MM-DD"),
     end_date: Optional[str] = Query(None, description="End date in format YYYY-MM-DD"),
     db: Session = Depends(get_db)
@@ -46,13 +46,13 @@ def get_satisfaction_score(
     try:
         start = parse_date(start_date)
         end = parse_date(end_date)
-        result = get_satisfaction_score_service(start, end, db)
+        result = get_emotions_service(start, end, db)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error retrieving satisfaction score data")
+        raise HTTPException(status_code=500, detail="Error retrieving emotions data")
 
-@router.get("/daily-satisfaction")
-def get_daily_satisfaction(
+@router.get("/daily-emotion")
+def get_daily_emotion(
     start_date: Optional[str] = Query(..., description="Start date in format YYYY-MM-DD"),
     end_date: Optional[str] = Query(..., description="End date in format YYYY-MM-DD"),
     db: Session = Depends(get_db)
@@ -60,10 +60,10 @@ def get_daily_satisfaction(
     try:
         start = parse_date(start_date)
         end = parse_date(end_date)
-        result = get_daily_satisfaction_service(start, end, db)
+        result = get_daily_emotion_service(start, end, db)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error retrieving daily satisfaction data")
+        raise HTTPException(status_code=500, detail="Error retrieving daily emotion data")
 
 @router.get("/average-service-time")
 def get_average_service_time(
