@@ -8,7 +8,8 @@ from app.services.dashboard_service import (
     get_emotions_service,
     get_daily_emotion_service,
     get_average_service_time_service,
-    get_open_tickets_service
+    get_open_tickets_service,
+    get_daily_tickets_service
 )
 from typing import Optional
 from app.utils.parse_date import parse_date
@@ -83,3 +84,17 @@ def get_open_tickets(db: Session = Depends(get_db)):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving open tickets data")
+
+@router.get("/daily-tickets")
+def get_daily_tickets(
+    start_date: Optional[str] = Query(..., description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(..., description="End date in format YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
+    try:
+        start = parse_date(start_date)
+        end = parse_date(end_date)
+        result = get_daily_tickets_service(start, end, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error retrieving daily tickets data")
