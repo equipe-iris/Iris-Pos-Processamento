@@ -150,3 +150,31 @@ def get_open_tickets_service(db: Session):
     except Exception as e:
         logger.error(f"Error in get_open_tickets_service: {e}")
         raise
+
+def get_daily_tickets_service(start_date: Optional[date], end_date: Optional[date], db: Session):
+    try:
+        query = db.query(
+            func.date(ProcessedTickets.start_date).label("date"),
+            func.count().label("quantity")
+        )
+        if start_date:
+            filter_start = datetime.combine(start_date, datetime.min.time())
+            query = query.filter(ProcessedTickets.start_date >= filter_start)
+        if end_date:
+            filter_end = datetime.combine(end_date, datetime.max.time())
+            query = query.filter(ProcessedTickets.start_date <= filter_end)
+        results = query.group_by(
+            func.date(ProcessedTickets.start_date)
+        ).order_by(func.date(ProcessedTickets.start_date)).all()
+
+        daily = []
+        for r in results:
+            daily.append({
+                "date": r.date.isoformat(),
+                "quantity": r.quantity
+            })
+
+        return daily
+    except Exception as e:
+        logger.error(f"Error in get_daily_tickets_service: {e}")
+        raise
