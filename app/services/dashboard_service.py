@@ -8,19 +8,49 @@ from dateutil.relativedelta import relativedelta
 
 logger = logging.getLogger(__name__)
 
-def get_cards_service(db: Session):
+def get_total_tickets_service(db: Session):
     try:
         total = db.query(func.count(ProcessedTickets.id)).scalar()
-        today = date.today()
-        start_of_day = datetime.combine(today, datetime.min.time())
-        end_of_day = datetime.combine(today, datetime.max.time())
-        daily = db.query(func.count(ProcessedTickets.id)).filter(
+        open_tickets = db.query(func.count(ProcessedTickets.id)).filter(
+            ProcessedTickets.end_date.is_(None)
+        ).scalar()
+        closed_tickets = db.query(func.count(ProcessedTickets.id)).filter(
+            ProcessedTickets.end_date.isnot(None)
+        ).scalar()
+        return {
+            "total": total,
+            "open": open_tickets,
+            "closed": closed_tickets
+        }
+    except Exception as e:
+        logger.error(f"Error in get_total_tickets_service: {e}")
+        raise
+
+def get_tickets_by_date_service(date: date, db: Session):
+    try:
+        start_of_day = datetime.combine(date, datetime.min.time())
+        end_of_day = datetime.combine(date, datetime.max.time())
+        total = db.query(func.count(ProcessedTickets.id)).filter(
             ProcessedTickets.start_date >= start_of_day,
             ProcessedTickets.start_date <= end_of_day
         ).scalar()
-        return {"total_tickets": total, "tickets_today": daily}
+        open_tickets = db.query(func.count(ProcessedTickets.id)).filter(
+            ProcessedTickets.start_date >= start_of_day,
+            ProcessedTickets.start_date <= end_of_day,
+            ProcessedTickets.end_date.is_(None)
+        ).scalar()
+        closed_tickets = db.query(func.count(ProcessedTickets.id)).filter(
+            ProcessedTickets.start_date >= start_of_day,
+            ProcessedTickets.start_date <= end_of_day,
+            ProcessedTickets.end_date.isnot(None)
+        ).scalar()
+        return {
+            "total": total,
+            "open": open_tickets,
+            "closed": closed_tickets
+        }
     except Exception as e:
-        logger.error(f"Error in get_cards_service: {e}")
+        logger.error(f"Error in get_tickets_by_date_service: {e}")
         raise
 
 def get_categories_service(start_date: Optional[date], end_date: Optional[date], db: Session):
