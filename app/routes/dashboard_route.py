@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from datetime import date
 from app.database import get_db
 from app.services.dashboard_service import (
-    get_cards_service,
+    get_total_tickets_service,
+    get_tickets_by_date_service,
     get_categories_service,
     get_emotions_service,
     get_daily_emotion_service,
@@ -16,13 +17,25 @@ from app.utils.parse_date import parse_date
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
-@router.get("/cards")
+@router.get("/total-tickets")
 def get_cards(db: Session = Depends(get_db)):
     try:
-        result = get_cards_service(db)
+        result = get_total_tickets_service(db)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error retrieving cards data")
+        raise HTTPException(status_code=500, detail="Error retrieving total tickets data")
+
+@router.get("/tickets")
+def get_tickets_by_date(
+    date: str = Query(..., description="Date in format YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
+    try:
+        parsed_date = parse_date(date)
+        result = get_tickets_by_date_service(parsed_date, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error retrieving tickets by date data")
 
 @router.get("/categories")
 def get_categories(
