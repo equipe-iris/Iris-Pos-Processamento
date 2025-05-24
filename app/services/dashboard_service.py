@@ -173,14 +173,6 @@ def get_average_service_time_service(months: int, db: Session):
         logger.error(f"Error in get_average_service_time_service: {e}")
         raise
 
-def get_open_tickets_service(db: Session):
-    try:
-        count = db.query(func.count(ProcessedTickets.id)).filter(ProcessedTickets.end_date.is_(None)).scalar()
-        return {"open_ticket_count": count}
-    except Exception as e:
-        logger.error(f"Error in get_open_tickets_service: {e}")
-        raise
-
 def get_daily_tickets_service(start_date: Optional[date], end_date: Optional[date], db: Session):
     try:
         query = db.query(
