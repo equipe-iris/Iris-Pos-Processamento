@@ -1,20 +1,32 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from typing import List
+from typing import List, Optional
 from app.schemas.classification_results_schema import ClassificationResults
 from app.services.tickets_service import (
     classification_results_service,
-    get_processed_tickets_service
+    get_processed_tickets_service,
+    get_open_tickets_service,
+    get_closed_tickets_service,
+    get_tickets_by_emotion_service,
+    get_tickets_by_category_service,
+    get_tickets_by_month_service
 )
+from app.utils.parse_date import parse_date
 
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
 @router.get("/processed-tickets")
-def get_processed_tickets(db: Session = Depends(get_db)):
+def get_processed_tickets(
+    start_date: Optional[str] = Query(..., description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(..., description="End date in format YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
     try:
-        processed_tickets = get_processed_tickets_service(db)
+        start = parse_date(start_date)
+        end = parse_date(end_date)
+        processed_tickets = get_processed_tickets_service(start, end, db)
         return processed_tickets
     
     except Exception as e:
@@ -30,4 +42,71 @@ def classification_results(results: List[ClassificationResults], db: Session = D
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error saving classification results")
     
+@router.get("/open-tickets")
+def get_open_tickets(
+    start_date: Optional[str] = Query(..., description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(..., description="End date in format YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
+    try:
+        start = parse_date(start_date)
+        end = parse_date(end_date)
+        result = get_open_tickets_service(start, end, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error retrieving open tickets data")
+
+@router.get("/closed-tickets")
+def get_closed_tickets(
+    start_date: Optional[str] = Query(None, description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="End date in format YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
+    try:
+        start = parse_date(start_date)
+        end = parse_date(end_date)
+        result = get_closed_tickets_service(start, end, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error retrieving closed tickets data")
     
+@router.get("/tickets-by-emotion")
+def get_tickets_by_emotion(
+    start_date: Optional[str] = Query(..., description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(..., description="End date in format YYYY-MM-DD"),
+    emotion: str = Query(..., description="Emotion to filter by"),
+    db: Session = Depends(get_db)
+):
+    start = parse_date(start_date)
+    end = parse_date(end_date)
+    try:
+        result = get_tickets_by_emotion_service(start, end, emotion, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error retrieving tickets by emotion data")
+
+@router.get("/tickets-by-category")
+def get_tickets_by_category(
+    start_date: Optional[str] = Query(..., description="Start date in format YYYY-MM-DD"),
+    end_date: Optional[str] = Query(..., description="End date in format YYYY-MM-DD"),
+    category: str = Query(..., description="Category to filter by"),
+    db: Session = Depends(get_db)
+):
+    start = parse_date(start_date)
+    end = parse_date(end_date)
+    try:
+        result = get_tickets_by_category_service(start, end, category, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error retrieving tickets by category data")
+    
+@router.get("/tickets-by-month")
+def get_tickets_by_month(
+    month: str = Query(..., description="Month you want to retrieve in format MM-YYYY"),
+    db: Session = Depends(get_db)
+):
+    try:
+        result = get_tickets_by_month_service(month, db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error retrieving tickets by month data")

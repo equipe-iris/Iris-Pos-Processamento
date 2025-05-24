@@ -9,7 +9,6 @@ from app.services.dashboard_service import (
     get_emotions_service,
     get_daily_emotion_service,
     get_average_service_time_service,
-    get_open_tickets_service,
     get_daily_tickets_service
 )
 from typing import Optional
@@ -89,14 +88,6 @@ def get_average_service_time(
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving average service time data")
-
-@router.get("/open-tickets")
-def get_open_tickets(db: Session = Depends(get_db)):
-    try:
-        result = get_open_tickets_service(db)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Error retrieving open tickets data")
 
 @router.get("/daily-tickets")
 def get_daily_tickets(
