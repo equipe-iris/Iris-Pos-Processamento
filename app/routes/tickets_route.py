@@ -10,7 +10,8 @@ from app.services.tickets_service import (
     get_closed_tickets_service,
     get_tickets_by_emotion_service,
     get_tickets_by_category_service,
-    get_tickets_by_month_service
+    get_tickets_by_month_service,
+    get_ticket_by_id_service
 )
 from app.utils.parse_date import parse_date
 
@@ -110,3 +111,14 @@ def get_tickets_by_month(
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving tickets by month data")
+
+@router.get("by-id/{id}")
+def get_ticket_by_id(
+    id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        ticket = get_ticket_by_id_service(id, db)
+        return ticket
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error retrieving ticket by ID")

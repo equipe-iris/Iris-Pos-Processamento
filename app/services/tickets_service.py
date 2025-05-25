@@ -143,3 +143,13 @@ def get_tickets_by_month_service(month_year: str, db: Session) -> List[TicketSch
     except Exception as e:
         print(f"Error in get_tickets_by_month_service: {e}")
         raise
+
+def get_ticket_by_id_service(ticket_id: int, db: Session) -> TicketSchema:
+    try:
+        ticket = db.query(ProcessedTickets).filter(ProcessedTickets.id == ticket_id).first()
+        if not ticket:
+            raise Exception("Ticket not found")
+        return TicketSchema.model_validate(ticket)
+    except Exception as e:
+        print(f"Error in get_ticket_by_id_service: {e}")
+        raise
