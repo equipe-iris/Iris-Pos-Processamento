@@ -12,6 +12,9 @@ class ProcessedTickets(Base):
     sentiment_rating = Column(String, nullable=False)
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=True)
+    in_charge = Column(String, nullable=False)
+    content = Column(String, nullable=False)
+    summary = Column(String, nullable=False)
     file_id = Column(Integer, ForeignKey("tickets_files.id"))
 
     file = relationship("TicketsFiles", back_populates="tickets")

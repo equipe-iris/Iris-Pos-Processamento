@@ -9,6 +9,9 @@ class CreateTicketSchema(BaseModel):
     sentiment_rating: str
     start_date: str
     end_date: Optional[str]
+    in_charge: str
+    content: str
+    summary: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -20,6 +23,9 @@ class TicketSchema(BaseModel):
     sentiment_rating: str
     start_date: datetime
     end_date: Optional[datetime]
+    in_charge: str
+    content: str
+    summary: str
     file_id: int
 
     model_config = ConfigDict(from_attributes=True)
