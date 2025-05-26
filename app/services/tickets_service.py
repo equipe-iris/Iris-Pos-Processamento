@@ -28,6 +28,9 @@ def classification_results_service(results_list: List[ClassificationResults], db
                     "sentiment_rating": ticket.sentiment_rating,
                     "start_date": safe_parse_date(ticket.start_date),
                     "end_date": safe_parse_date(ticket.end_date),
+                    "in_charge": ticket.in_charge,
+                    "content": ticket.content,
+                    "summary": ticket.summary,
                     "file_id": results.file_id
                 }
                 for ticket in results.processed_tickets
@@ -127,6 +130,9 @@ def get_tickets_by_category_service(start_date: Optional[date], end_date: Option
 
 def get_tickets_by_month_service(month_year: str, db: Session) -> List[TicketSchema]:
     try:
+        if not month_year or not month_year.strip():
+            raise ValueError("Month parameter cannot be empty")
+
         month, year = map(int, month_year.split("/"))
         first_day = date(year, month, 1)
         last_day = date(year, month, monthrange(year, month)[1])
