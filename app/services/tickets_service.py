@@ -10,11 +10,17 @@ from typing import List, Optional
 from datetime import date
 from calendar import monthrange
 
-def safe_parse_date(date_str: str) -> datetime:
-    try:
-        return datetime.fromisoformat(date_str)
-    except ValueError:
+def safe_parse_date(date_value):
+    if date_value is None:
         return None
+    if isinstance(date_value, datetime):
+        return date_value
+    if isinstance(date_value, str):
+        try:
+            return datetime.fromisoformat(date_value)
+        except ValueError:
+            return None
+    return None
 
 def classification_results_service(results_list: List[ClassificationResults], db: Session):
     try:
@@ -39,8 +45,13 @@ def classification_results_service(results_list: List[ClassificationResults], db
         db.bulk_insert_mappings(ProcessedTickets, tickets_data)
         db.commit()
 
+        original_ids = [data["original_id"] for data in tickets_data]
+        inserted_tickets = db.query(ProcessedTickets).filter(ProcessedTickets.original_id.in_(original_ids)).all()
+        return [TicketSchema.model_validate(ticket) for ticket in inserted_tickets]
+
     except Exception as e:
         print(f"Error saving classification results: {e}")
+        return []
 
     finally:
         try:
@@ -159,3 +170,17 @@ def get_ticket_by_id_service(ticket_id: int, db: Session) -> TicketSchema:
     except Exception as e:
         print(f"Error in get_ticket_by_id_service: {e}")
         raise
+
+def get_tickets_by_semantic_search_service(semantic_results: list, db: Session) -> List[dict]:
+    
+    ids = [item.id for item in semantic_results]
+    score_map = {item.id: item.score for item in semantic_results}
+
+    tickets = db.query(ProcessedTickets).filter(ProcessedTickets.id.in_(ids)).all()
+
+    result = []
+    for ticket in tickets:
+        ticket_data = TicketSchema.model_validate(ticket).model_dump()
+        ticket_data["score"] = score_map.get(ticket.id)
+        result.append(ticket_data)
+    return result
