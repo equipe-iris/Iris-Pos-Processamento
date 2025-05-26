@@ -34,9 +34,6 @@ def classification_results_service(results_list: List[ClassificationResults], db
                     "sentiment_rating": ticket.sentiment_rating,
                     "start_date": safe_parse_date(ticket.start_date),
                     "end_date": safe_parse_date(ticket.end_date),
-                    "in_charge": ticket.in_charge,
-                    "content": ticket.content,
-                    "summary": ticket.summary,
                     "file_id": results.file_id
                 }
                 for ticket in results.processed_tickets
@@ -167,3 +164,17 @@ def get_ticket_by_id_service(ticket_id: int, db: Session) -> TicketSchema:
     except Exception as e:
         print(f"Error in get_ticket_by_id_service: {e}")
         raise
+
+def get_tickets_by_semantic_search_service(semantic_results: list, db: Session) -> List[dict]:
+    
+    ids = [item.id for item in semantic_results]
+    score_map = {item.id: item.score for item in semantic_results}
+
+    tickets = db.query(ProcessedTickets).filter(ProcessedTickets.id.in_(ids)).all()
+
+    result = []
+    for ticket in tickets:
+        ticket_data = TicketSchema.model_validate(ticket).model_dump()
+        ticket_data["score"] = score_map.get(ticket.id)
+        result.append(ticket_data)
+    return result

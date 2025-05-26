@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from typing import List, Optional
 from app.schemas.classification_results_schema import ClassificationResults
+from app.schemas.semantic_search_schema import SemanticSearchSchema
 from app.services.tickets_service import (
     classification_results_service,
     get_processed_tickets_service,
@@ -11,9 +12,11 @@ from app.services.tickets_service import (
     get_tickets_by_emotion_service,
     get_tickets_by_category_service,
     get_tickets_by_month_service,
-    get_ticket_by_id_service
+    get_ticket_by_id_service,
+    get_tickets_by_semantic_search_service
 )
 from app.utils.parse_date import parse_date
+from app.utils.serialize_ticket import serialize_ticket
 import requests
 
 
@@ -39,15 +42,18 @@ def get_processed_tickets(
 def classification_results(results: List[ClassificationResults], db: Session = Depends(get_db)):
     try:
         inserted_tickets = classification_results_service(results, db)
-        
+        tickets_payload = [serialize_ticket(t) for t in inserted_tickets]
+
         try:
             response = requests.post(
-                "http://localhost:5000/semantic-search/sync",
-                json={"tickets": inserted_tickets}
+                "http://host.docker.internal:5000/semantic-search/sync",
+                json={"tickets": tickets_payload},
+                timeout=5
             )
             response.raise_for_status()
         except Exception as ex:
-            raise HTTPException(status_code=500, detail="Error synchronizing data with semantic search embeddings and index")
+            print("Erro ao sincronizar", ex)
+            raise HTTPException(status_code=500, detail=f"{ex}")
         
         return { "message": "Classification results saved successfully" }
 
@@ -123,7 +129,7 @@ def get_tickets_by_month(
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving tickets by month data")
 
-@router.get("by-id/{id}")
+@router.get("/by-id/{id}")
 def get_ticket_by_id(
     id: int,
     db: Session = Depends(get_db)
@@ -133,3 +139,17 @@ def get_ticket_by_id(
         return ticket
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving ticket by ID")
+    
+@router.post("/semantic-search")
+def semantic_search(
+    files_to_retrive: list[SemanticSearchSchema],
+    db: Session = Depends(get_db)
+):
+    try:
+        tickets = get_tickets_by_semantic_search_service(files_to_retrive, db)
+        return tickets
+
+    except Exception as ex:
+        print("Erro ao buscar por tickets", ex)
+        raise HTTPException(status_code=500, detail=f"{ex}"
+)
