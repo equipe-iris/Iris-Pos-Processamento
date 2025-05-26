@@ -9,9 +9,9 @@ class CreateTicketSchema(BaseModel):
     sentiment_rating: str
     start_date: str
     end_date: Optional[str]
-    in_charge: str
-    content: str
-    summary: str
+    in_charge: Optional[str]
+    content: Optional[str]
+    summary: Optional[str]
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -10,11 +10,17 @@ from typing import List, Optional
 from datetime import date
 from calendar import monthrange
 
-def safe_parse_date(date_str: str) -> datetime:
-    try:
-        return datetime.fromisoformat(date_str)
-    except ValueError:
+def safe_parse_date(date_value):
+    if date_value is None:
         return None
+    if isinstance(date_value, datetime):
+        return date_value
+    if isinstance(date_value, str):
+        try:
+            return datetime.fromisoformat(date_value)
+        except ValueError:
+            return None
+    return None
 
 def classification_results_service(results_list: List[ClassificationResults], db: Session):
     try:
@@ -28,6 +34,9 @@ def classification_results_service(results_list: List[ClassificationResults], db
                     "sentiment_rating": ticket.sentiment_rating,
                     "start_date": safe_parse_date(ticket.start_date),
                     "end_date": safe_parse_date(ticket.end_date),
+                    "in_charge": ticket.in_charge,
+                    "content": ticket.content,
+                    "summary": ticket.summary,
                     "file_id": results.file_id
                 }
                 for ticket in results.processed_tickets
@@ -36,8 +45,13 @@ def classification_results_service(results_list: List[ClassificationResults], db
         db.bulk_insert_mappings(ProcessedTickets, tickets_data)
         db.commit()
 
+        original_ids = [data["original_id"] for data in tickets_data]
+        inserted_tickets = db.query(ProcessedTickets).filter(ProcessedTickets.original_id.in_(original_ids)).all()
+        return [TicketSchema.model_validate(ticket) for ticket in inserted_tickets]
+
     except Exception as e:
         print(f"Error saving classification results: {e}")
+        return []
 
     finally:
         try:

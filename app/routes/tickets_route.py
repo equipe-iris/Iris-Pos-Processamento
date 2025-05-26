@@ -14,6 +14,7 @@ from app.services.tickets_service import (
     get_ticket_by_id_service
 )
 from app.utils.parse_date import parse_date
+import requests
 
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -37,11 +38,21 @@ def get_processed_tickets(
 @router.post("/classification-results")
 def classification_results(results: List[ClassificationResults], db: Session = Depends(get_db)):
     try:
-        classification_results_service(results, db)
+        inserted_tickets = classification_results_service(results, db)
+        
+        try:
+            response = requests.post(
+                "http://localhost:5000/semantic-search/sync",
+                json={"tickets": inserted_tickets}
+            )
+            response.raise_for_status()
+        except Exception as ex:
+            raise HTTPException(status_code=500, detail="Error synchronizing data with semantic search embeddings and index")
+        
         return { "message": "Classification results saved successfully" }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error saving classification results")
+        raise HTTPException(status_code=500, detail=f"Error saving classification results {e}")
     
 @router.get("/open-tickets")
 def get_open_tickets(
